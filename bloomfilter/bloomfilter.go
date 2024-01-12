@@ -31,7 +31,7 @@ func NewBloomFilter(error_rate float64, insertions int64) *BloomFilter {
 
 	// k := ln(2)*m/n
 	k := math.Ceil(math.Log(2) * m / float64(insertions))
-	defer log.Printf("Bloom Filter creater where hash function count is %v and bitset size is %d", k, uint64(m))
+	defer log.Printf("Bloom Filter created with %v Hash Functions and BitSet<%v>", k, uint64(m))
 	return &BloomFilter{
 		FuncCount: uint64(k),
 		BitCount:  uint64(m),
