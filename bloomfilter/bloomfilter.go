@@ -1,13 +1,10 @@
-package bloomfilter 
+package bloomfilter
 
 import (
-	"fmt"
-	"hash"
-	"math"
-	"math/rand"
-
+	"log"
 	"github.com/2asm/bloom-filter/bitset"
 	"github.com/spaolacci/murmur3"
+	"math"
 )
 
 // error
@@ -15,8 +12,9 @@ import (
 // m bits, k hash functions, n insertions
 
 type BloomFilter struct {
-	b      *bitset.BitSet
-	hashes []hash.Hash32
+	FuncCount uint64
+	BitCount  uint64
+	Bset      *bitset.BitSet
 }
 
 type IBloomFilter interface {
@@ -33,47 +31,37 @@ func NewBloomFilter(error_rate float64, insertions int64) *BloomFilter {
 
 	// k := ln(2)*m/n
 	k := math.Ceil(math.Log(2) * m / float64(insertions))
-
-	var hashes []hash.Hash32
-	for i := 0; i < int(k); i++ {
-		h := murmur3.New32WithSeed(rand.Uint32())
-		hashes = append(hashes, h)
-	}
+    defer log.Printf("Bloom Filter creater where hash function count is %v and bitset size is %d", k, uint64(m))
 	return &BloomFilter{
-		b:      bitset.NewBitSet(int(m)),
-		hashes: hashes,
+		FuncCount: uint64(k),
+		BitCount:  uint64(m),
+		Bset:      bitset.NewBitSet(int64(m)),
 	}
 }
 
 func (bf *BloomFilter) Add(s string) {
-	for _, h := range bf.hashes {
-		h.Reset()
-		h.Write([]byte(s))
-		digest := h.Sum32()
-		pos := int(digest % uint32(bf.b.Len()))
-		bf.b.Set(pos)
-	}
+	h1, h2 := murmur3.Sum128([]byte(s))
+    // shift to fit the hash in 64bit uint
+    h1 >>= 8
+    h2 >>= 8
+    hash := h1
+    for i:=uint64(0) ; i<bf.FuncCount; i++ {
+        hash += bf.FuncCount*h2
+        bf.Bset.Set(int(hash%bf.BitCount))
+    }
 }
 
 func (bf *BloomFilter) Contains(s string) bool {
-	for _, h := range bf.hashes {
-		h.Reset()
-		h.Write([]byte(s))
-		digest := h.Sum32()
-		pos := int(digest % uint32(bf.b.Len()))
-		if bf.b.IsSet(pos) == false {
-			return false
-		}
-	}
+	h1, h2 := murmur3.Sum128([]byte(s))
+    // shift to fit the hash in 64bit uint
+    h1 >>= 8
+    h2 >>= 8
+    hash := h1
+    for i:=uint64(0) ; i<bf.FuncCount; i++ {
+        hash += bf.FuncCount*h2
+        if !bf.Bset.IsSet(int(hash%bf.BitCount)) {
+            return false;
+        }
+    }
 	return true
-}
-
-func main() {
-	// error_rate, number of insertions
-	bf := NewBloomFilter(0.01, 1000000)
-	bf.Add("hi")
-	bf.Add("hello there")
-	fmt.Printf("%v\n", bf.Contains("hi"))
-	fmt.Printf("%v\n", bf.Contains("hello there"))
-	fmt.Printf("%v\n", bf.Contains("we"))
 }

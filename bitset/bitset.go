@@ -1,7 +1,7 @@
 package bitset
 
 type BitSet struct {
-	len   int
+	len   int64
 	array []uint64
 }
 
@@ -12,7 +12,7 @@ type IBitSet interface {
 	String() string
 }
 
-func NewBitSet(len int) *BitSet {
+func NewBitSet(len int64) *BitSet {
 	return &BitSet{
 		len:   len,
 		array: make([]uint64, (len+63)/64),
@@ -20,7 +20,7 @@ func NewBitSet(len int) *BitSet {
 }
 
 // pos is 0 base index
-func (b *BitSet) Len() int {
+func (b *BitSet) Len() int64 {
 	return b.len
 }
 
