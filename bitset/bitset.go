@@ -28,11 +28,11 @@ func (b *BitSet) String() string {
 	output := ""
 	for _, d := range b.array {
 		for i := 0; i < 64; i++ {
-            if (d>>i&1) == 1 {
-                output += "1"
-            } else {
-                output += "0"
-            }
+			if (d >> i & 1) == 1 {
+				output += "1"
+			} else {
+				output += "0"
+			}
 		}
 	}
 	return output
