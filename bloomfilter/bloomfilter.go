@@ -1,10 +1,12 @@
 package bloomfilter
 
 import (
-	"github.com/2asm/bloom-filter/bitset"
-	"github.com/spaolacci/murmur3"
 	"log"
 	"math"
+	"math/rand"
+
+	"github.com/2asm/bloom-filter/bitset"
+	"github.com/spaolacci/murmur3"
 )
 
 // error
@@ -15,6 +17,7 @@ type BloomFilter struct {
 	FuncCount uint64
 	BitCount  uint64
 	Bset      *bitset.BitSet
+	Seeds     []uint32
 }
 
 type IBloomFilter interface {
@@ -31,34 +34,30 @@ func NewBloomFilter(error_rate float64, insertions int64) *BloomFilter {
 
 	// k := ln(2)*m/n
 	k := math.Ceil(math.Log(2) * m / float64(insertions))
+
+	seeds := make([]uint32, int(k))
+	for i := 0; i < int(k); i++ {
+		seeds[i] = rand.Uint32()
+	}
 	defer log.Printf("Bloom Filter created with %v Hash Functions and BitSet<%v>", k, uint64(m))
 	return &BloomFilter{
 		FuncCount: uint64(k),
 		BitCount:  uint64(m),
 		Bset:      bitset.NewBitSet(int64(m)),
+		Seeds:     seeds,
 	}
 }
 
 func (bf *BloomFilter) Add(s string) {
-	h1, h2 := murmur3.Sum128([]byte(s))
-	// shift to fit the hash in 64bit uint
-	h1 >>= 8
-	h2 >>= 8
-	hash := h1
 	for i := uint64(0); i < bf.FuncCount; i++ {
-		hash += bf.FuncCount * h2
+		hash := murmur3.Sum64WithSeed([]byte(s), bf.Seeds[i])
 		bf.Bset.Set(int(hash % bf.BitCount))
 	}
 }
 
 func (bf *BloomFilter) Contains(s string) bool {
-	h1, h2 := murmur3.Sum128([]byte(s))
-	// shift to fit the hash in 64bit uint
-	h1 >>= 8
-	h2 >>= 8
-	hash := h1
 	for i := uint64(0); i < bf.FuncCount; i++ {
-		hash += bf.FuncCount * h2
+		hash := murmur3.Sum64WithSeed([]byte(s), bf.Seeds[i])
 		if !bf.Bset.IsSet(int(hash % bf.BitCount)) {
 			return false
 		}
