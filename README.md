@@ -5,13 +5,13 @@ Fast bloom filter implementation in golang
 ### Quick start
 ``` Golang
 func main() {
-    // NewBloomFilter takes error_rate and number of insertions as arguments
+    // error_rate, number of insertions
     bf := bloomfilter.NewBloomFilter(0.001, 100000)
-    bf.Add("hi")
-    bf.Add("hello there")
-    fmt.Printf("%v\n", bf.Contains("hi"))
-    fmt.Printf("%v\n", bf.Contains("hello there"))
-    fmt.Printf("%v\n", bf.Contains("we"))
+    bf.Add("dog")
+    bf.Add("cat")
+    fmt.Printf("%v\n", bf.Contains("dog"))
+    fmt.Printf("%v\n", bf.Contains("cat"))
+    fmt.Printf("%v\n", bf.Contains("hat"))
 }
 
 ```
